@@ -12,8 +12,11 @@ public class NavDataConversorGUI extends JFrame {
     private JTextArea areaLog;
     private JProgressBar barra;
     private JButton btnProcesar;
+    private JButton btnBorrarOriginales;
+    private JPanel abajo;   // ✅ Ahora es atributo de clase
 
     public NavDataConversorGUI() {
+
         setTitle("Navdata Conversor");
         setSize(600, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -37,8 +40,8 @@ public class NavDataConversorGUI extends JFrame {
         areaLog.setEditable(false);
         JScrollPane scroll = new JScrollPane(areaLog);
 
-        // --- Abajo: progreso + botón ---
-        JPanel abajo = new JPanel(new BorderLayout(5, 5));
+        // --- Abajo: progreso + botones ---
+        abajo = new JPanel(new BorderLayout(5, 5));   // ✅ Inicializado aquí
         barra = new JProgressBar();
         barra.setStringPainted(true);
 
@@ -65,6 +68,7 @@ public class NavDataConversorGUI extends JFrame {
     }
 
     private void iniciarProceso() {
+
         String ruta = txtRuta.getText().trim();
 
         if (ruta.isEmpty()) {
@@ -80,6 +84,17 @@ public class NavDataConversorGUI extends JFrame {
         }
 
         btnProcesar.setEnabled(false);
+
+        // ✅ Crear botón de borrado solo una vez
+        if (btnBorrarOriginales == null) {
+            btnBorrarOriginales = new JButton("Borrar originales");
+            btnBorrarOriginales.setEnabled(false);
+            btnBorrarOriginales.addActionListener(e -> borrarOriginales());
+            abajo.add(btnBorrarOriginales, BorderLayout.WEST);
+            abajo.revalidate();
+        }
+
+        archivosXml.clear();
 
         SwingWorker<Void, String> worker = new SwingWorker<>() {
 
@@ -108,7 +123,6 @@ public class NavDataConversorGUI extends JFrame {
                 }
 
                 publish("Proceso completado.");
-
                 return null;
             }
 
@@ -122,6 +136,7 @@ public class NavDataConversorGUI extends JFrame {
             @Override
             protected void done() {
                 btnProcesar.setEnabled(true);
+                btnBorrarOriginales.setEnabled(true);
             }
         };
 
@@ -137,16 +152,48 @@ public class NavDataConversorGUI extends JFrame {
             if (f.isDirectory()) {
                 buscarXML(f);
             } else {
-            String nombre = f.getName();
+                String nombre = f.getName();
 
-            if (nombre.toLowerCase().endsWith(".xml")
-                    && nombre.matches("^[A-Za-z0-9]{4}\\.xml$")) {
+                if (nombre.toLowerCase().endsWith(".xml")
+                        && nombre.matches("^[A-Za-z0-9]{4}\\.xml$")) {
 
-                archivosXml.add(f);
+                    archivosXml.add(f);
+                }
             }
         }
     }
-}
+
+    private void borrarOriginales() {
+
+        if (archivosXml.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No hay archivos para borrar.");
+            return;
+        }
+
+        int resp = JOptionPane.showConfirmDialog(
+                this,
+                "¿Seguro que quieres borrar los archivos originales?\nEsta acción no se puede deshacer.",
+                "Confirmar borrado",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (resp != JOptionPane.YES_OPTION) return;
+
+        int contador = 0;
+
+        for (File f : archivosXml) {
+            if (f.exists()) {
+                if (f.delete()) {
+                    contador++;
+                } else {
+                    areaLog.append("No se pudo borrar: " + f.getName() + "\n");
+                }
+            }
+        }
+
+        areaLog.append("Archivos originales eliminados: " + contador + "\n");
+        JOptionPane.showMessageDialog(this, "Borrado completado.");
+    }
 
     private void procesarArchivo(File archivo) {
 
@@ -169,7 +216,7 @@ public class NavDataConversorGUI extends JFrame {
             File carpetaB = new File(carpetaA, String.valueOf(B));
             File carpetaC = new File(carpetaB, String.valueOf(C));
 
-            carpetaC.mkdirs(); // crea toda la cadena A/B/C
+            carpetaC.mkdirs();
 
             String nuevoNombre = prefijo + ".procedures.xml";
             File destino = new File(carpetaC, nuevoNombre);
@@ -188,6 +235,7 @@ public class NavDataConversorGUI extends JFrame {
     }
 
     private void copiarArchivo(File origen, File destino) throws IOException {
+
         try (FileInputStream fis = new FileInputStream(origen);
              FileOutputStream fos = new FileOutputStream(destino)) {
 

@@ -2,72 +2,90 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.*;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class NavDataConversorGUI extends JFrame {
 
-    private List<File> archivosXml = new ArrayList<>();
-    private JTextField txtRuta;
+    private JTextField txtRutaEntrada;
+    private JTextField txtRutaSalida;
+
     private JTextArea areaLog;
     private JProgressBar barra;
     private JButton btnProcesar, btnBorrarOriginales;
-    private JPanel abajo;
+
+    private List<File> archivosXml = new ArrayList<>();
+
+    // ✅ Ruta por defecto multiplataforma
+    private final Path rutaPorDefecto = Paths.get(
+            System.getProperty("user.home"),
+            "FlightGear", "Downloads", "fgdata_2024_1", "Scenery", "Airports"
+    );
 
     public NavDataConversorGUI() {
+
         setTitle("NavData Conversor");
-        setSize(650, 450);
+        setSize(750, 500);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // --- Panel principal con padding ---
-        JPanel panel = new JPanel(new BorderLayout(12, 12));
-        panel.setBorder(new EmptyBorder(12, 12, 12, 12));
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
         panel.setBackground(new Color(245, 245, 245));
 
-        // --- Parte superior: selector de carpeta ---
-        JPanel arriba = new JPanel(new BorderLayout(6, 6));
+        // ============================================================
+        // ✅ PANEL SUPERIOR: Entrada + Salida
+        // ============================================================
+        JPanel arriba = new JPanel(new GridLayout(2, 1, 8, 8));
         arriba.setBackground(new Color(245, 245, 245));
 
-        txtRuta = new JTextField();
-        txtRuta.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1));
-        JButton btnSeleccionar = new JButton("Seleccionar carpeta");
-        btnSeleccionar.setBackground(new Color(70, 130, 180));
-        btnSeleccionar.setForeground(Color.WHITE);
-        btnSeleccionar.setFocusPainted(false);
-        btnSeleccionar.addActionListener(e -> seleccionarCarpeta());
+        // ---- Entrada ----
+        JPanel lineaEntrada = new JPanel(new BorderLayout(5, 5));
+        lineaEntrada.setBackground(new Color(245, 245, 245));
+        txtRutaEntrada = new JTextField();
+        JButton btnSelEntrada = new JButton("Seleccionar carpeta de entrada");
+        btnSelEntrada.addActionListener(e -> seleccionarCarpeta(txtRutaEntrada));
+        lineaEntrada.add(txtRutaEntrada, BorderLayout.CENTER);
+        lineaEntrada.add(btnSelEntrada, BorderLayout.EAST);
 
-        arriba.add(txtRuta, BorderLayout.CENTER);
-        arriba.add(btnSeleccionar, BorderLayout.EAST);
+        // ---- Salida ----
+        JPanel lineaSalida = new JPanel(new BorderLayout(5, 5));
+        lineaSalida.setBackground(new Color(245, 245, 245));
+        txtRutaSalida = new JTextField(rutaPorDefecto.toString());
+        JButton btnSelSalida = new JButton("Seleccionar carpeta de salida");
+        btnSelSalida.addActionListener(e -> seleccionarCarpeta(txtRutaSalida));
+        lineaSalida.add(txtRutaSalida, BorderLayout.CENTER);
+        lineaSalida.add(btnSelSalida, BorderLayout.EAST);
 
-        // --- Centro: log con scroll y fuente monoespaciada ---
+        arriba.add(lineaEntrada);
+        arriba.add(lineaSalida);
+
+        // ============================================================
+        // ✅ PANEL CENTRAL: LOG
+        // ============================================================
         areaLog = new JTextArea();
         areaLog.setEditable(false);
         areaLog.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        areaLog.setBackground(new Color(250, 250, 250));
-        areaLog.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1));
         JScrollPane scroll = new JScrollPane(areaLog);
 
-        // --- Abajo: barra de progreso + botones ---
-        abajo = new JPanel(new BorderLayout(8, 8));
+        // ============================================================
+        // ✅ PANEL INFERIOR: PROGRESO + BOTONES
+        // ============================================================
+        JPanel abajo = new JPanel(new BorderLayout(8, 8));
         abajo.setBackground(new Color(245, 245, 245));
+
         barra = new JProgressBar();
         barra.setStringPainted(true);
-        barra.setForeground(new Color(70, 130, 180));
-        barra.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1));
 
-        // Botón procesar
         btnProcesar = new JButton("Procesar");
         btnProcesar.setBackground(new Color(60, 179, 113));
         btnProcesar.setForeground(Color.WHITE);
-        btnProcesar.setFocusPainted(false);
         btnProcesar.addActionListener(e -> iniciarProceso());
 
-        // Botón borrar originales
         btnBorrarOriginales = new JButton("Borrar originales");
-        btnBorrarOriginales.setBackground(new Color(220, 20, 60));
+        btnBorrarOriginales.setBackground(new Color(200, 50, 50));
         btnBorrarOriginales.setForeground(Color.WHITE);
-        btnBorrarOriginales.setFocusPainted(false);
         btnBorrarOriginales.setEnabled(false);
         btnBorrarOriginales.addActionListener(e -> borrarOriginales());
 
@@ -75,7 +93,9 @@ public class NavDataConversorGUI extends JFrame {
         abajo.add(btnProcesar, BorderLayout.EAST);
         abajo.add(btnBorrarOriginales, BorderLayout.WEST);
 
-        // --- Montaje final ---
+        // ============================================================
+        // ✅ ENSAMBLADO FINAL
+        // ============================================================
         panel.add(arriba, BorderLayout.NORTH);
         panel.add(scroll, BorderLayout.CENTER);
         panel.add(abajo, BorderLayout.SOUTH);
@@ -83,59 +103,86 @@ public class NavDataConversorGUI extends JFrame {
         add(panel);
     }
 
-    private void seleccionarCarpeta() {
+    // ============================================================
+    // ✅ Selección de carpeta
+    // ============================================================
+    private void seleccionarCarpeta(JTextField campo) {
         JFileChooser fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
         if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            txtRuta.setText(fc.getSelectedFile().getAbsolutePath());
+            campo.setText(fc.getSelectedFile().getAbsolutePath());
         }
     }
 
+    // ============================================================
+    // ✅ Inicio proceso
+    // ============================================================
     private void iniciarProceso() {
 
-        String ruta = txtRuta.getText().trim();
+        String rutaEntrada = txtRutaEntrada.getText().trim();
+        String rutaSalida = txtRutaSalida.getText().trim();
 
-        if (ruta.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Selecciona una carpeta primero.");
+        if (rutaEntrada.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Selecciona una carpeta de ENTRADA.");
             return;
         }
 
-        File carpeta = new File(ruta);
-
-        if (!carpeta.exists() || !carpeta.isDirectory()) {
-            JOptionPane.showMessageDialog(this, "La ruta no es válida.");
+        if (rutaSalida.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Selecciona una carpeta de SALIDA.");
             return;
         }
 
+        // ✅ Aviso si la salida es la predeterminada
+        if (rutaSalida.equals(rutaPorDefecto.toString())) {
+            int r = JOptionPane.showConfirmDialog(
+                    this,
+                    "La carpeta de salida es la predeterminada.\n" +
+                            "Puede que no exista en algunos equipos.\n\n" +
+                            "¿Deseas continuar igualmente?",
+                    "Advertencia",
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            if (r != JOptionPane.YES_OPTION) return;
+        }
+
+        File carpetaEntrada = new File(rutaEntrada);
+        File carpetaSalida = new File(rutaSalida);
+
+        carpetaSalida.mkdirs(); // crear si no existe
+
+        archivosXml.clear();
         btnProcesar.setEnabled(false);
         btnBorrarOriginales.setEnabled(false);
-        archivosXml.clear();
+        areaLog.setText("");
 
         SwingWorker<Void, String> worker = new SwingWorker<>() {
+
             @Override
             protected Void doInBackground() {
-                publish("Buscando archivos .xml...");
-                buscarXML(carpeta);
 
-                int total = archivosXml.size();
-                barra.setMaximum(total);
+                publish("Buscando archivos XML...");
+                buscarXML(carpetaEntrada);
 
-                if (total == 0) {
-                    publish("No se encontraron archivos XML.");
+                barra.setMaximum(archivosXml.size());
+
+                if (archivosXml.isEmpty()) {
+                    publish("No se encontraron XML válidos.");
                     return null;
                 }
 
-                publish("Total encontrados: " + total);
+                publish("Encontrados: " + archivosXml.size());
 
-                int contador = 0;
-                for (File archivo : archivosXml) {
-                    procesarArchivo(archivo);
-                    contador++;
-                    barra.setValue(contador);
+                int count = 0;
+
+                for (File xml : archivosXml) {
+                    procesarArchivo(xml, carpetaSalida);
+                    barra.setValue(++count);
                 }
 
-                publish("Proceso completado.");
+                publish("✅ Proceso completado.");
+
                 return null;
             }
 
@@ -143,7 +190,6 @@ public class NavDataConversorGUI extends JFrame {
             protected void process(List<String> chunks) {
                 for (String msg : chunks) {
                     areaLog.append(msg + "\n");
-                    areaLog.setCaretPosition(areaLog.getDocument().getLength());
                 }
             }
 
@@ -157,6 +203,9 @@ public class NavDataConversorGUI extends JFrame {
         worker.execute();
     }
 
+    // ============================================================
+    // ✅ Buscar XML de 4 letras
+    // ============================================================
     private void buscarXML(File carpeta) {
         File[] archivos = carpeta.listFiles();
         if (archivos == null) return;
@@ -164,89 +213,58 @@ public class NavDataConversorGUI extends JFrame {
         for (File f : archivos) {
             if (f.isDirectory()) {
                 buscarXML(f);
-            } else {
-                String nombre = f.getName();
-                if (nombre.toLowerCase().endsWith(".xml") && nombre.matches("^[A-Za-z0-9]{4}\\.xml$")) {
-                    archivosXml.add(f);
-                }
+            } else if (f.getName().matches("^[A-Za-z0-9]{4}\\.xml$")) {
+                archivosXml.add(f);
             }
         }
     }
 
-    private void borrarOriginales() {
-        if (archivosXml.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "No hay archivos para borrar.");
-            return;
-        }
+    // ============================================================
+    // ✅ Procesar un archivo
+    // ============================================================
+    private void procesarArchivo(File xml, File carpetaSalidaBase) {
 
-        int resp = JOptionPane.showConfirmDialog(
+        try {
+            String nombre = xml.getName();
+            String prefijo = nombre.substring(0, 4);
+
+            // carpetas X / Y / Z
+            File sub1 = new File(carpetaSalidaBase, "" + prefijo.charAt(0));
+            File sub2 = new File(sub1, "" + prefijo.charAt(1));
+            File sub3 = new File(sub2, "" + prefijo.charAt(2));
+            sub3.mkdirs();
+
+            File destino = new File(sub3, prefijo + ".procedures.xml");
+
+            Files.copy(xml.toPath(), destino.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+            areaLog.append("Copiado: " + xml.getName() + " → " + destino.getPath() + "\n");
+
+        } catch (Exception e) {
+            areaLog.append("ERROR procesando " + xml.getName() + ": " + e.getMessage() + "\n");
+        }
+    }
+
+    // ============================================================
+    // ✅ Borrar originales
+    // ============================================================
+    private void borrarOriginales() {
+        int r = JOptionPane.showConfirmDialog(
                 this,
-                "¿Seguro que quieres borrar los archivos originales?\nEsta acción no se puede deshacer.",
-                "Confirmar borrado",
+                "¿Seguro que quieres borrar los originales?\nEsto no se puede deshacer.",
+                "Confirmar",
                 JOptionPane.YES_NO_OPTION
         );
 
-        if (resp != JOptionPane.YES_OPTION) return;
+        if (r != JOptionPane.YES_OPTION) return;
 
-        int contador = 0;
+        int count = 0;
+
         for (File f : archivosXml) {
-            if (f.exists() && f.delete()) {
-                contador++;
-            } else {
-                areaLog.append("No se pudo borrar: " + f.getName() + "\n");
-            }
+            if (f.exists() && f.delete()) count++;
         }
 
-        areaLog.append("Archivos originales eliminados: " + contador + "\n");
-        JOptionPane.showMessageDialog(this, "Borrado completado.");
-    }
-
-    private void procesarArchivo(File archivo) {
-        try {
-            String nombre = archivo.getName();
-            String prefijo = nombre.substring(0, 4);
-
-            if (!prefijo.matches("[A-Za-z0-9]{4}")) {
-                areaLog.append("Saltado (prefijo inválido): " + nombre + "\n");
-                return;
-            }
-
-            char A = prefijo.charAt(0);
-            char B = prefijo.charAt(1);
-            char C = prefijo.charAt(2);
-
-            File carpetaProcedures = new File(archivo.getParentFile().getParentFile(), "procedures");
-            File carpetaA = new File(carpetaProcedures, String.valueOf(A));
-            File carpetaB = new File(carpetaA, String.valueOf(B));
-            File carpetaC = new File(carpetaB, String.valueOf(C));
-
-            carpetaC.mkdirs();
-
-            String nuevoNombre = prefijo + ".procedures.xml";
-            File destino = new File(carpetaC, nuevoNombre);
-
-            if (destino.exists()) {
-                areaLog.append("Ya existe: " + nuevoNombre + "\n");
-                return;
-            }
-
-            copiarArchivo(archivo, destino);
-            areaLog.append("Copiado: " + nombre + " -> " + destino.getPath() + "\n");
-
-        } catch (Exception e) {
-            areaLog.append("ERROR procesando: " + archivo.getName() + " -> " + e.getMessage() + "\n");
-        }
-    }
-
-    private void copiarArchivo(File origen, File destino) throws IOException {
-        try (FileInputStream fis = new FileInputStream(origen);
-             FileOutputStream fos = new FileOutputStream(destino)) {
-            byte[] buffer = new byte[4096];
-            int length;
-            while ((length = fis.read(buffer)) > 0) {
-                fos.write(buffer, 0, length);
-            }
-        }
+        JOptionPane.showMessageDialog(this, "Eliminados: " + count);
     }
 
     public static void main(String[] args) {

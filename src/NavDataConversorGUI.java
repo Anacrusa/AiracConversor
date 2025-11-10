@@ -11,46 +11,71 @@ public class NavDataConversorGUI extends JFrame {
     private JTextField txtRuta;
     private JTextArea areaLog;
     private JProgressBar barra;
-    private JButton btnProcesar;
-    private JButton btnBorrarOriginales;
-    private JPanel abajo;   // ✅ Ahora es atributo de clase
+    private JButton btnProcesar, btnBorrarOriginales;
+    private JPanel abajo;
 
     public NavDataConversorGUI() {
-
-        setTitle("Navdata Conversor");
-        setSize(600, 400);
+        setTitle("NavData Conversor");
+        setSize(650, 450);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        // --- Panel principal con padding ---
+        JPanel panel = new JPanel(new BorderLayout(12, 12));
+        panel.setBorder(new EmptyBorder(12, 12, 12, 12));
+        panel.setBackground(new Color(245, 245, 245));
 
         // --- Parte superior: selector de carpeta ---
-        JPanel arriba = new JPanel(new BorderLayout(5, 5));
-        txtRuta = new JTextField();
-        JButton btnSeleccionar = new JButton("Seleccionar carpeta");
+        JPanel arriba = new JPanel(new BorderLayout(6, 6));
+        arriba.setBackground(new Color(245, 245, 245));
 
+        txtRuta = new JTextField();
+        txtRuta.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1));
+        JButton btnSeleccionar = new JButton("Seleccionar carpeta");
+        btnSeleccionar.setBackground(new Color(70, 130, 180));
+        btnSeleccionar.setForeground(Color.WHITE);
+        btnSeleccionar.setFocusPainted(false);
         btnSeleccionar.addActionListener(e -> seleccionarCarpeta());
 
         arriba.add(txtRuta, BorderLayout.CENTER);
         arriba.add(btnSeleccionar, BorderLayout.EAST);
 
-        // --- Centro: log ---
+        // --- Centro: log con scroll y fuente monoespaciada ---
         areaLog = new JTextArea();
         areaLog.setEditable(false);
+        areaLog.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        areaLog.setBackground(new Color(250, 250, 250));
+        areaLog.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1));
         JScrollPane scroll = new JScrollPane(areaLog);
 
-        // --- Abajo: progreso + botones ---
-        abajo = new JPanel(new BorderLayout(5, 5));   // ✅ Inicializado aquí
+        // --- Abajo: barra de progreso + botones ---
+        abajo = new JPanel(new BorderLayout(8, 8));
+        abajo.setBackground(new Color(245, 245, 245));
         barra = new JProgressBar();
         barra.setStringPainted(true);
+        barra.setForeground(new Color(70, 130, 180));
+        barra.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1));
 
+        // Botón procesar
         btnProcesar = new JButton("Procesar");
+        btnProcesar.setBackground(new Color(60, 179, 113));
+        btnProcesar.setForeground(Color.WHITE);
+        btnProcesar.setFocusPainted(false);
         btnProcesar.addActionListener(e -> iniciarProceso());
+
+        // Botón borrar originales
+        btnBorrarOriginales = new JButton("Borrar originales");
+        btnBorrarOriginales.setBackground(new Color(220, 20, 60));
+        btnBorrarOriginales.setForeground(Color.WHITE);
+        btnBorrarOriginales.setFocusPainted(false);
+        btnBorrarOriginales.setEnabled(false);
+        btnBorrarOriginales.addActionListener(e -> borrarOriginales());
 
         abajo.add(barra, BorderLayout.CENTER);
         abajo.add(btnProcesar, BorderLayout.EAST);
+        abajo.add(btnBorrarOriginales, BorderLayout.WEST);
 
+        // --- Montaje final ---
         panel.add(arriba, BorderLayout.NORTH);
         panel.add(scroll, BorderLayout.CENTER);
         panel.add(abajo, BorderLayout.SOUTH);
@@ -84,23 +109,12 @@ public class NavDataConversorGUI extends JFrame {
         }
 
         btnProcesar.setEnabled(false);
-
-        // ✅ Crear botón de borrado solo una vez
-        if (btnBorrarOriginales == null) {
-            btnBorrarOriginales = new JButton("Borrar originales");
-            btnBorrarOriginales.setEnabled(false);
-            btnBorrarOriginales.addActionListener(e -> borrarOriginales());
-            abajo.add(btnBorrarOriginales, BorderLayout.WEST);
-            abajo.revalidate();
-        }
-
+        btnBorrarOriginales.setEnabled(false);
         archivosXml.clear();
 
         SwingWorker<Void, String> worker = new SwingWorker<>() {
-
             @Override
             protected Void doInBackground() {
-
                 publish("Buscando archivos .xml...");
                 buscarXML(carpeta);
 
@@ -115,7 +129,6 @@ public class NavDataConversorGUI extends JFrame {
                 publish("Total encontrados: " + total);
 
                 int contador = 0;
-
                 for (File archivo : archivosXml) {
                     procesarArchivo(archivo);
                     contador++;
@@ -130,6 +143,7 @@ public class NavDataConversorGUI extends JFrame {
             protected void process(List<String> chunks) {
                 for (String msg : chunks) {
                     areaLog.append(msg + "\n");
+                    areaLog.setCaretPosition(areaLog.getDocument().getLength());
                 }
             }
 
@@ -145,7 +159,6 @@ public class NavDataConversorGUI extends JFrame {
 
     private void buscarXML(File carpeta) {
         File[] archivos = carpeta.listFiles();
-
         if (archivos == null) return;
 
         for (File f : archivos) {
@@ -153,10 +166,7 @@ public class NavDataConversorGUI extends JFrame {
                 buscarXML(f);
             } else {
                 String nombre = f.getName();
-
-                if (nombre.toLowerCase().endsWith(".xml")
-                        && nombre.matches("^[A-Za-z0-9]{4}\\.xml$")) {
-
+                if (nombre.toLowerCase().endsWith(".xml") && nombre.matches("^[A-Za-z0-9]{4}\\.xml$")) {
                     archivosXml.add(f);
                 }
             }
@@ -164,7 +174,6 @@ public class NavDataConversorGUI extends JFrame {
     }
 
     private void borrarOriginales() {
-
         if (archivosXml.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No hay archivos para borrar.");
             return;
@@ -180,14 +189,11 @@ public class NavDataConversorGUI extends JFrame {
         if (resp != JOptionPane.YES_OPTION) return;
 
         int contador = 0;
-
         for (File f : archivosXml) {
-            if (f.exists()) {
-                if (f.delete()) {
-                    contador++;
-                } else {
-                    areaLog.append("No se pudo borrar: " + f.getName() + "\n");
-                }
+            if (f.exists() && f.delete()) {
+                contador++;
+            } else {
+                areaLog.append("No se pudo borrar: " + f.getName() + "\n");
             }
         }
 
@@ -196,7 +202,6 @@ public class NavDataConversorGUI extends JFrame {
     }
 
     private void procesarArchivo(File archivo) {
-
         try {
             String nombre = archivo.getName();
             String prefijo = nombre.substring(0, 4);
@@ -206,7 +211,6 @@ public class NavDataConversorGUI extends JFrame {
                 return;
             }
 
-            // Rutas ABC → A/B/C
             char A = prefijo.charAt(0);
             char B = prefijo.charAt(1);
             char C = prefijo.charAt(2);
@@ -235,10 +239,8 @@ public class NavDataConversorGUI extends JFrame {
     }
 
     private void copiarArchivo(File origen, File destino) throws IOException {
-
         try (FileInputStream fis = new FileInputStream(origen);
              FileOutputStream fos = new FileOutputStream(destino)) {
-
             byte[] buffer = new byte[4096];
             int length;
             while ((length = fis.read(buffer)) > 0) {

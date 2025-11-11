@@ -17,7 +17,8 @@ public class NavDataConversorGUI extends JFrame {
 
     private List<File> archivosXml = new ArrayList<>();
 
-    // Ruta por defecto multiplataforma
+    // Ruta por defecto versión Simulador FlightGear 2024.1
+
     private final Path rutaPorDefecto = Paths.get(
             System.getProperty("user.home"),
             "FlightGear", "Downloads", "fgdata_2024_1", "Scenery", "Airports"
@@ -34,9 +35,10 @@ public class NavDataConversorGUI extends JFrame {
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
         panel.setBackground(new Color(245, 245, 245));
 
-        // ============================================================
-        // PANEL SUPERIOR: Entrada + Salida
-        // ============================================================
+        // ================================ //
+        // PANEL SUPERIOR: Entrada + Salida //
+        // ================================ //
+
         JPanel arriba = new JPanel(new GridLayout(2, 1, 8, 8));
         arriba.setBackground(new Color(245, 245, 245));
 
@@ -61,17 +63,19 @@ public class NavDataConversorGUI extends JFrame {
         arriba.add(lineaEntrada);
         arriba.add(lineaSalida);
 
-        // ============================================================
-        // PANEL CENTRAL: LOG
-        // ============================================================
+        // ================== //
+        // PANEL CENTRAL: LOG //
+        // ================== //
+
         areaLog = new JTextArea();
         areaLog.setEditable(false);
         areaLog.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
         JScrollPane scroll = new JScrollPane(areaLog);
 
-        // ============================================================
-        // PANEL INFERIOR: PROGRESO + BOTONES
-        // ============================================================
+        // ================================== //
+        // PANEL INFERIOR: PROGRESO + BOTONES //
+        // ================================== //
+
         JPanel abajo = new JPanel(new BorderLayout(8, 8));
         abajo.setBackground(new Color(245, 245, 245));
 
@@ -93,9 +97,10 @@ public class NavDataConversorGUI extends JFrame {
         abajo.add(btnProcesar, BorderLayout.EAST);
         abajo.add(btnBorrarOriginales, BorderLayout.WEST);
 
-        // ============================================================
-        // ENSAMBLADO FINAL
-        // ============================================================
+        // ================ //
+        // ENSAMBLADO FINAL //
+        // ================ //
+
         panel.add(arriba, BorderLayout.NORTH);
         panel.add(scroll, BorderLayout.CENTER);
         panel.add(abajo, BorderLayout.SOUTH);
@@ -103,9 +108,10 @@ public class NavDataConversorGUI extends JFrame {
         add(panel);
     }
 
-    // ============================================================
-    // Selección de carpeta
-    // ============================================================
+    // ==================== //
+    // Selección de carpeta //
+    // ==================== //
+
     private void seleccionarCarpeta(JTextField campo) {
         JFileChooser fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -115,9 +121,10 @@ public class NavDataConversorGUI extends JFrame {
         }
     }
 
-    // ============================================================
-    // Inicio proceso
-    // ============================================================
+    // ============== //
+    // Inicio proceso //
+    // ============== //
+
     private void iniciarProceso() {
 
         String rutaEntrada = txtRutaEntrada.getText().trim();
@@ -203,9 +210,10 @@ public class NavDataConversorGUI extends JFrame {
         worker.execute();
     }
 
-    // ============================================================
-    // Buscar XML de 4 letras
-    // ============================================================
+    // ====================== //
+    // Buscar XML de 4 letras //
+    // ====================== //
+
     private void buscarXML(File carpeta) {
         File[] archivos = carpeta.listFiles();
         if (archivos == null) return;
@@ -219,9 +227,10 @@ public class NavDataConversorGUI extends JFrame {
         }
     }
 
-    // ============================================================
-    // Procesar un archivo
-    // ============================================================
+    // =================== //
+    // Procesar un archivo //
+    // =================== //
+
     private void procesarArchivo(File xml, File carpetaSalidaBase) {
 
         try {
@@ -245,9 +254,10 @@ public class NavDataConversorGUI extends JFrame {
         }
     }
 
-    // ============================================================
-    //  Borrar originales
-    // ============================================================
+    // ================== //
+    //  Borrar originales //
+    // ================== //
+    
     private void borrarOriginales() {
         int r = JOptionPane.showConfirmDialog(
                 this,

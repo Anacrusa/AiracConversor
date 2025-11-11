@@ -133,7 +133,7 @@ public class NavDataConversorGUI extends JFrame {
             return;
         }
 
-        // Aviso si la salida es la predeterminada y si no existe aún crearla
+        // Aviso si la salida es la predeterminada y si no existe aún crearla o no luego    
         if (rutaSalida.equals(rutaPorDefecto.toString())) {
             int r = JOptionPane.showConfirmDialog(
                     this,
